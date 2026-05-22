@@ -3,39 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的 2FA 验证码生成器 + 联系客服</title>
+    <title>Prime Video 登录工具与自助服务站</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/otpauth/9.2.2/otpauth.umd.min.js"></script>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: #f0f2f5;
             display: flex;
-            flex-direction: column; /* 改为纵向排列 */
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
-            min-height: 100vh; /* 使用 min-height 以适应内容增长 */
+            min-height: 100vh;
             margin: 0;
-            padding: 20px; /* 增加一些边距 */
+            padding: 40px 20px;
             box-sizing: border-box;
         }
         
-        /* 通用卡片样式 */
-        .card {
+        /* 模块化卡片通用样式 */
+        .card-module {
             background: #ffffff;
             border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.06);
             width: 100%;
-            max-width: 400px;
+            max-width: 420px; /* 统一模块宽度 */
+            margin-bottom: 24px;
+            overflow: hidden;
             text-align: center;
-            overflow: hidden; /* 确保内容不超过圆角 */
         }
 
-        /* 1. 验证器主体部分 */
-        .authenticator-section {
-            padding: 40px 30px 20px 30px; /* 底部预留空间给进度条 */
-        }
-        h2 { color: #333; margin-top: 0; margin-bottom: 10px;}
-        p.subtitle { color: #666; font-size: 14px; margin-bottom: 25px; }
+        /* --- 1. 验证器模块 --- */
+        .auth-section { padding: 30px 30px 15px 30px; }
+        h2 { color: #333; margin-top: 0; margin-bottom: 8px;}
+        p.subtitle { color: #666; font-size: 13px; margin-bottom: 25px; line-height: 1.5; }
         input {
             width: 90%;
             padding: 12px;
@@ -45,140 +43,212 @@
             outline: none;
             transition: border-color 0.3s;
             text-align: center;
+            box-sizing: border-box;
         }
         input:focus { border-color: #007bff; }
         
-        /* 优化后的数字显示区域样式 (支持点击交互) */
+        /* 数字显示区域 */
         .code-display {
             font-size: 48px;
             font-weight: bold;
             color: #1a1a1a;
-            margin: 25px 0;
+            margin: 20px 0;
             letter-spacing: 8px;
             font-family: monospace;
-            cursor: pointer; /* 鼠标悬停变成小手 */
+            cursor: pointer;
             transition: color 0.2s, transform 0.1s;
-            user-select: none; /* 防止双击时出现蓝色文本选中背景 */
+            user-select: none;
             padding: 10px;
             border-radius: 8px;
         }
-        .code-display:hover {
-            color: #007bff;
-            background-color: #f8f9fa;
-        }
-        .code-display:active {
-            transform: scale(0.98); /* 点击时轻微缩放反馈 */
-        }
-        .code-display.success-state {
-            color: #28a745;
-            font-size: 24px;
-            letter-spacing: 2px;
-            background-color: transparent;
-        }
-        .code-display.error-state {
-            color: #dc3545;
-            font-size: 24px;
-            letter-spacing: 2px;
-        }
+        .code-display:hover { color: #007bff; background-color: #f8f9fa; }
+        .code-display:active { transform: scale(0.98); }
+        .code-display.success-state { color: #28a745; font-size: 24px; letter-spacing: 2px; background-color: transparent; }
+        .code-display.error-state { color: #dc3545; font-size: 24px; letter-spacing: 2px; }
 
-        .progress-container {
-            width: 100%;
-            background-color: #e9ecef;
-            height: 6px;
-            overflow: hidden;
-            margin-top: -6px; /* 进度条紧贴上方内容 */
-        }
-        .progress-bar {
-            height: 100%;
-            background-color: #007bff;
-            width: 100%;
-            transition: width 1s linear, background-color 0.3s;
-        }
-        .status-text { font-size: 13px; color: #888; padding: 10px 0; }
+        /* 进度条 */
+        .progress-container { width: 100%; background-color: #e9ecef; height: 6px; }
+        .progress-bar { height: 100%; background-color: #007bff; width: 100%; transition: width 1s linear, background-color 0.3s; }
+        .status-text { font-size: 13px; color: #888; padding: 12px 0; }
 
-        /* 2. 新增：联系客服部分 */
-        .contact-section {
-            background-color: #f8f9fa; /* 淡灰色背景区分 */
-            padding: 30px;
-            border-top: 1px solid #eee;
+        /* --- 2. 新增：折叠教程模块 --- */
+        .guide-section {
+            padding: 25px 20px;
+            text-align: left;
         }
-        .contact-section h3 {
-            color: #444;
+        .guide-section h3 {
+            text-align: center;
             margin-top: 0;
+            color: #2d3748;
             font-size: 18px;
+            margin-bottom: 5px;
         }
-        .contact-section p {
-            color: #777;
-            font-size: 13px;
+        .guide-intro {
+            text-align: center;
+            font-size: 12px;
+            color: #718096;
             margin-bottom: 20px;
+            line-height: 1.5;
         }
+        
+        /* 折叠面板核心样式 */
+        details {
+            margin-bottom: 12px;
+            background-color: #f8f9fa;
+            border: 1px solid #edf2f7;
+            border-radius: 8px;
+        }
+        summary {
+            padding: 14px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #2d3748;
+            cursor: pointer;
+            outline: none;
+            position: relative;
+            user-select: none;
+            list-style: none; /* 隐藏默认箭头 */
+        }
+        summary::-webkit-details-marker { display: none; }
+        summary::after {
+            content: '+';
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 18px;
+            color: #a0aec0;
+        }
+        details[open] summary::after { content: '-'; }
+        details[open] summary { border-bottom: 1px solid #edf2f7; }
+        
+        .details-content {
+            padding: 15px 16px;
+            font-size: 13px;
+            color: #4a5568;
+            line-height: 1.6;
+        }
+        .details-content h4 { margin: 15px 0 5px 0; color: #2d3748; font-size: 13px; }
+        .details-content h4:first-child { margin-top: 0; }
+        .details-content ul { padding-left: 20px; margin: 5px 0; }
+        .details-content li { margin-bottom: 6px; }
+        .highlight-blue { color: #007bff; font-weight: bold; }
+        .highlight-red { color: #e53e3e; font-weight: bold; }
+
+        /* --- 3. 联系客服模块 --- */
+        .contact-section {
+            padding: 25px 20px;
+            background-color: #fafbfc;
+        }
+        .contact-section h3 { margin-top: 0; font-size: 16px; color: #444; }
+        .contact-section p { font-size: 13px; color: #666; margin-bottom: 15px; }
         .qr-code-container {
-            width: 150px;
-            height: 150px;
-            margin: 0 auto 20px auto; /* 居中 */
-            border: 1px solid #ddd;
-            padding: 5px;
-            background: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            width: 140px; height: 140px;
+            margin: 0 auto 15px auto;
+            border: 1px solid #e2e8f0;
+            padding: 5px; background: white;
+            border-radius: 8px;
         }
-        .qr-code-container img {
-            max-width: 100%;
-            max-height: 100%;
-        }
+        .qr-code-container img { max-width: 100%; max-height: 100%; }
         .contact-button {
             display: inline-block;
             background-color: #007bff;
             color: white;
-            padding: 10px 20px;
+            padding: 10px 24px;
             text-decoration: none;
             border-radius: 8px;
             font-size: 14px;
             font-weight: bold;
             transition: background-color 0.2s;
         }
-        .contact-button:hover {
-            background-color: #0056b3;
-        }
-
+        .contact-button:hover { background-color: #0056b3; }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <div class="authenticator-section">
+    <div class="card-module">
+        <div class="auth-section">
             <h2>2FA 身份验证器</h2>
-            <p class="subtitle">将会员的 OTP电子验证码 粘贴在下方获取 6 位动态密码，点击数字可以自动复制</p>
+            <p class="subtitle">将客服发送的 OTP 电子验证码<br>粘贴在下方即可获取 6 位动态密码</p>
             
             <input type="text" id="secretKey" placeholder="例如: JBSWY3DPEHPK3PXP" autocomplete="off">
-            
             <div class="code-display" id="codeDisplay" title="点击复制纯数字">------</div>
         </div>
-
         <div class="progress-container">
             <div class="progress-bar" id="progressBar"></div>
         </div>
         <div class="status-text" id="statusText">等待输入密钥...</div>
+    </div>
 
-        <div class="contact-section">
-            <h3>联系客服</h3>
-            <p>如果您在使用中遇到问题，请扫描下方二维码联系我们。</p>
-            
-            <div class="qr-code-container">
-                <img src="contact_qr.png" alt="联系客服二维码">
+    <div class="card-module guide-section">
+        <h3>📚 Prime Video 畅享指南</h3>
+        <p class="guide-intro">遇到报错请勿担忧，99%都是网络节点问题<br>请阅读下方指南，或直接联系底部客服</p>
+
+        <details>
+            <summary>💡 观影必看小贴士</summary>
+            <div class="details-content">
+                <ul>
+                    <li><strong>网络推荐：</strong>强烈建议使用 <strong>US(美国)</strong> 或 <strong>HK(香港)</strong> 节点，中文字幕最友好。</li>
+                    <li><strong>观看范围：</strong>仅可观看带 <span class="highlight-blue">蓝色小勾 ✔️</span> 的免费影片。</li>
+                    <li><span class="highlight-red">严禁操作：</span>请勿点击带“小黄袋子”图标的付费影片，尝试播放会<strong>导致账号被封禁</strong>。如需付费内容请联系微信客服。</li>
+                </ul>
             </div>
-            
-            <a href="https://amzpv.shop" class="contact-button" target="_blank">访问 AMZPV.SHOP</a>
+        </details>
+
+        <details>
+            <summary>📱 各设备如何登录观影？</summary>
+            <div class="details-content">
+                <h4>🖥️ 电脑网页端</h4>
+                <ul>
+                    <li>访问官网 <a href="https://www.primevideo.com" target="_blank">primevideo.com</a>，登录时手机区号务必选择 <strong>+1 (US)</strong>。</li>
+                    <li>输入密码后，使用本网页获取 6 位 OTP 填入即可。</li>
+                </ul>
+                <h4>📱 手机 / 平板端</h4>
+                <ul>
+                    <li><strong>安卓：</strong>在 Google Play 或使用 APK Pure 下载 App。</li>
+                    <li><strong>苹果：</strong>需使用外区(如美区/港区) Apple ID 登录 App Store 下载。</li>
+                    <li>打开 App，区号选择 <strong>+1 (US)</strong>，输入密码与本网页的 OTP。</li>
+                </ul>
+                <h4>📺 智能电视端</h4>
+                <ul>
+                    <li>在手机浏览器打开 <a href="https://amazon.com/mytv" target="_blank">amazon.com/mytv</a>，登录后输入电视屏幕上的匹配码。</li>
+                </ul>
+            </div>
+        </details>
+
+        <details>
+            <summary>🆘 常见报错急救包 (转圈/代码)</summary>
+            <div class="details-content">
+                <h4>❓ 报错 7031/5004 或提示“所在地区不可用”</h4>
+                <p><strong>原因：</strong>账号正常！您的网络节点 IP 不够纯净，被官方检测到了。<br><strong>解决：</strong>更换一个更纯净的网络节点线路（推荐切换到 US 或 HK），重启网络工具并刷新网页即可恢复。</p>
+                
+                <h4>❓ 提示“Too many devices (设备过多)”</h4>
+                <p><strong>解决：</strong>请确保每次只在一台设备上播放。换设备看前，请先将上一台设备彻底退出播放页面。</p>
+
+                <h4>❓ 一直转圈圈，连登录页都打不开</h4>
+                <p><strong>解决：</strong>说明您的网络加速工具未开启，或当前节点断线。请切换其他国家的节点，在电脑上按 <code>Ctrl + F5</code> 强制刷新网页，或使用浏览器的“无痕模式”重新打开。</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="card-module contact-section">
+        <h3>💬 专属客服微信：amzpv777</h3>
+        <p>闲鱼平台有些问题不便回答，遇到解决不了的故障，请扫码或加微信，客服上线第一时间为您处理！</p>
+        
+        <div class="qr-code-container">
+            <img src="contact_qr.png" alt="联系客服二维码">
         </div>
+        
+        <a href="https://amzpv.shop" class="contact-button" target="_blank">访问 AMZPV.SHOP</a>
     </div>
 
     <script>
-        let currentValidToken = ""; // 全局保存当前有效的数字验证码
-        let isShowingFeedback = false; // 防止显示提示文字时被自动刷新覆盖
+        // 核心验证码逻辑
+        let currentValidToken = ""; 
+        let isShowingFeedback = false; 
 
         function updateCode() {
-            if (isShowingFeedback) return; // 如果正在显示“复制成功”，暂时停止 UI 更新
+            if (isShowingFeedback) return; 
 
             const secretInput = document.getElementById('secretKey').value.replace(/\s+/g, '').toUpperCase();
             const codeDisplay = document.getElementById('codeDisplay');
@@ -205,9 +275,8 @@
                 });
 
                 let token = totp.generate();
-                currentValidToken = token; // 将原始 6 位数字存起来，用于复制
+                currentValidToken = token; 
 
-                // 界面上显示时加一个空格，提升可读性
                 codeDisplay.innerText = token.slice(0, 3) + " " + token.slice(3);
                 codeDisplay.style.fontSize = "48px";
                 codeDisplay.className = "code-display"; 
@@ -228,37 +297,31 @@
 
             } catch (e) {
                 currentValidToken = ""; 
-                codeDisplay.innerText = "无效的密钥格式";
-                codeDisplay.style.fontSize = "24px";
+                codeDisplay.innerText = "无效密钥格式";
+                codeDisplay.style.fontSize = "32px";
                 codeDisplay.className = "code-display";
                 progressBar.style.width = "0%";
                 statusText.innerText = "请检查是否复制完整";
             }
         }
 
-        // --- 核心更新：一键复制功能监听 ---
+        // 一键复制监听
         document.getElementById('codeDisplay').addEventListener('click', function() {
-            if (!currentValidToken) return; // 如果没有有效的验证码（例如刚打开或者报错时），点击无效
+            if (!currentValidToken) return; 
 
             const codeDisplay = this;
             
-            // 使用现代剪贴板 API 写入原始数字
             navigator.clipboard.writeText(currentValidToken).then(() => {
-                isShowingFeedback = true; // 开启提示锁定
-                
+                isShowingFeedback = true;
                 codeDisplay.innerText = "✅ 复制成功";
                 codeDisplay.className = "code-display success-state";
                 
-                // 1.5 秒后恢复数字显示
                 setTimeout(() => {
                     isShowingFeedback = false;
                     updateCode(); 
                 }, 1500);
-
             }).catch(err => {
                 isShowingFeedback = true;
-                console.error('Failed to copy: ', err);
-                
                 codeDisplay.innerText = "❌ 复制失败";
                 codeDisplay.className = "code-display error-state";
                 
@@ -269,9 +332,7 @@
             });
         });
 
-        // 监听输入框变化，实时更新
         document.getElementById('secretKey').addEventListener('input', updateCode);
-        // 每秒钟执行一次倒计时和更新
         setInterval(updateCode, 1000);
     </script>
 
